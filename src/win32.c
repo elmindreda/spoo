@@ -29,6 +29,8 @@
 
 #include "internal.h"
 
+#include <stdlib.h>
+
 
 //************************************************************************
 // This is an implementation of POSIX "compatible" condition variables for
@@ -214,7 +216,7 @@ int _spooPlatformWaitThread(SPOOthread ID, int waitmode)
 
 SPOOthread _spooPlatformGetThreadID(void)
 {
-    _SPOOthread* thread
+    _SPOOthread* thread;
     SPOOthread threadID = SPOO_INVALID_THREAD;
     DWORD windowsID;
 

@@ -48,9 +48,9 @@
 //------------------------------------------------------------------------
 
 #define ENTER_THREAD_CRITICAL_SECTION \
-        EnterCriticalSection( &_glfwThrd.CriticalSection );
+        EnterCriticalSection( &_spooLibrary.windows.criticalSection );
 #define LEAVE_THREAD_CRITICAL_SECTION \
-        LeaveCriticalSection( &_glfwThrd.CriticalSection );
+        LeaveCriticalSection( &_spooLibrary.windows.criticalSection );
 
 
 //========================================================================
