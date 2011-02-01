@@ -108,7 +108,7 @@ int _spooPlatformInit(void)
     // Set start time for timer
     gettimeofday(&tv, NULL);
     _spooLibrary.posix.baseTime = (long long) tv.tv_sec * (long long) 1000000 +
-		                          (long long) tv.tv_usec;
+                                  (long long) tv.tv_usec;
 
     pthread_mutex_init(&_spooLibrary.posix.criticalSection, NULL);
 
@@ -164,7 +164,7 @@ double _spooPlatformGetTime(void)
 
     gettimeofday(&tv, NULL);
     time = (long long) tv.tv_sec * (long long) 1000000 +
-	       (long long) tv.tv_usec;
+           (long long) tv.tv_usec;
 
     return (double) (time - _spooLibrary.posix.baseTime) * _spooLibrary.posix.timerRes;
 }
@@ -181,7 +181,7 @@ void _spooPlatformSetTime(double time)
 
     gettimeofday(&tv, NULL);
     baseTime = (long long) tv.tv_sec * (long long) 1000000 +
-	           (long long) tv.tv_usec;
+               (long long) tv.tv_usec;
 
     // Calulate new starting time
     _spooLibrary.posix.baseTime = baseTime - (long long) (time / _spooLibrary.posix.timerRes);
