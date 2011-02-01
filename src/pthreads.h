@@ -59,8 +59,8 @@ typedef struct
 {
     pthread_mutex_t     criticalSection;
 
-    long long           timerRes;
-    double              baseTime;
+    double              timerRes;
+    long long           baseTime;
 
 } _SPOOlibraryPOSIX;
 
