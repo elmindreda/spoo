@@ -348,9 +348,9 @@ void _spooPlatformWaitCond(SPOOcond handle, SPOOmutex mutex, double timeout)
     DWORD timeoutMS;
 
     // Avoid race conditions
-    EnterCriticalSection(&cond->waiters_count_lock);
+    EnterCriticalSection(&cond->waiterCountLock);
     cond->waiterCount++;
-    LeaveCriticalSection(&cond->waiters_count_lock);
+    LeaveCriticalSection(&cond->waiterCountLock);
 
     // It's ok to release the mutex here since Win32 manual-reset events
     // maintain state when used with SetEvent()
@@ -371,10 +371,10 @@ void _spooPlatformWaitCond(SPOOcond handle, SPOOmutex mutex, double timeout)
     result = WaitForMultipleObjects(2, cond->events, FALSE, timeoutMS);
 
     // Check if we are the last waiter
-    EnterCriticalSection(&cv->waiterCountLock);
-    cond->waiters_count--;
-    last_waiter = (result == WAIT_OBJECT_0 + _SPOO_COND_BROADCAST) &&
-                  (cond->waiterCount == 0);
+    EnterCriticalSection(&cond->waiterCountLock);
+    cond->waiterCount--;
+    lastWaiter = (result == WAIT_OBJECT_0 + _SPOO_COND_BROADCAST) &&
+                 (cond->waiterCount == 0);
     LeaveCriticalSection(&cond->waiterCountLock);
 
     // Some thread called spooBroadcastCond
