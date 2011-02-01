@@ -170,6 +170,8 @@ int _spooPlatformTerminate(void)
     if (pthread_self() != _spooLibrary.first.posix.ID)
         return SPOO_FALSE;
 
+    ENTER_THREAD_CRITICAL_SECTION
+
     // Kill all remaining threads created by Spoo
     // NOTE: The user should wait for all threads to die BEFORE calling
     // spooTerminate.  Any work we need to do here is really an error.
