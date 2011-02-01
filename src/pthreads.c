@@ -29,9 +29,33 @@
 
 #include "internal.h"
 
-#if defined(_SPOO_HAS_SYSCTL)
-#include <sys/sysctl.h>
+#if defined(_SPOO_HAS_SCHED_YIELD)
+#include <sched.h>
+#endif /*_SPOO_HAS_SCHED_YIELD*/
+
+#if defined(_SPOO_HAS_SYSCONF)
+
+#include <unistd.h>
+
+// Use a single constant for querying number of online processors using
+// the sysconf function (e.g. SGI defines _SC_NPROC_ONLN instead of
+// _SC_NPROCESSORS_ONLN)
+#ifndef _SC_NPROCESSORS_ONLN
+ #ifdef  _SC_NPROC_ONLN
+  #define _SC_NPROCESSORS_ONLN _SC_NPROC_ONLN
+ #else
+  #error POSIX constant _SC_NPROCESSORS_ONLN not defined!
+ #endif
 #endif
+
+#endif /*_SPOO_HAS_SYSCONF*/
+
+#if defined(_SPOO_HAS_SYSCTL)
+
+#include <sys/types.h>
+#include <sys/sysctl.h>
+
+#endif /*_SPOO_HAS_SYSCTL*/
 
 #include <sys/time.h>
 #include <signal.h>
@@ -504,7 +528,29 @@ void _spooPlatformBroadcastCond(SPOOcond cond)
 int _spooPlatformGetCPUCoreCount(void)
 {
     int count;
-    _spoo_numprocessors(count);
+#if defined(_SPOO_HAS_SYSCTL)
+    int result, mib[2];
+    size_t length;
+#endif /*_SPOO_HAS_SYSCTL*/
+
+#if defined(_SPOO_HAS_SYSCONF)
+    count = (int) sysconf(_SC_NPROCESSORS_ONLN);
+#elif defined(_SPOO_HAS_SYSCTL)
+    mib[0] = CTL_HW;
+    mib[1] = HW_NCPU;
+
+    count = 1;
+    length = 1;
+
+    if (sysctl(mib, 2, &result, &length, NULL, 0) != -1)
+    {
+        if (length > 0 )
+            count = result;
+    }
+#else /*_SPOO_HAS_SYSCONF*/
+    count = 1;
+#endif /*_SPOO_HAS_SYSCONF*/
+
     return count;
 }
 

@@ -37,55 +37,6 @@
 // Spoo platform-specific macros
 //========================================================================
 
-// We support two different ways for getting the number of processors in
-// the system: sysconf (POSIX) and sysctl (BSD?)
-#if defined(_SPOO_HAS_SYSCONF)
-
- #include <unistd.h>
-
- // Use a single constant for querying number of online processors using
- // the sysconf function (e.g. SGI defines _SC_NPROC_ONLN instead of
- // _SC_NPROCESSORS_ONLN)
- #ifndef _SC_NPROCESSORS_ONLN
-  #ifdef  _SC_NPROC_ONLN
-   #define _SC_NPROCESSORS_ONLN _SC_NPROC_ONLN
-  #else
-   #error POSIX constant _SC_NPROCESSORS_ONLN not defined!
-  #endif
- #endif
-
- // Macro for querying the number of processors
- #define _spoo_numprocessors(n) n=(int)sysconf(_SC_NPROCESSORS_ONLN)
-
-#elif defined(_SPOO_HAS_SYSCTL)
-
- #include <sys/types.h>
- #include <sys/sysctl.h>
-
- // Macro for querying the number of processors
- #define _spoo_numprocessors(n) { \
-    int mib[2], ncpu; \
-    size_t len = 1; \
-    mib[0] = CTL_HW; \
-    mib[1] = HW_NCPU; \
-    n      = 1; \
-    if( sysctl( mib, 2, &ncpu, &len, NULL, 0 ) != -1 ) \
-    { \
-        if( len > 0 ) \
-        { \
-            n = ncpu; \
-        } \
-    } \
- }
-
-#else
-
- // If neither sysconf nor sysctl is supported, assume single processor
- // system
- #define _spoo_numprocessors(n) n=1
-
-#endif
-
 //------------------------------------------------------------------------
 // Macros for encapsulating critical code sections (i.e. making parts
 // of Spoo thread safe)
