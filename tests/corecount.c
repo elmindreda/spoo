@@ -41,7 +41,9 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 
-    printf("%i CPU cores reported\n", spooGetCPUCoreCount());
+    int count = spooGetCPUCoreCount();
+
+    printf("%i CPU core%s reported\n", count, count == 1 ? "" : "s");
 
     spooTerminate();
     exit(EXIT_SUCCESS);
