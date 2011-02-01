@@ -51,10 +51,8 @@
 #endif /*_SPOO_HAS_SYSCONF*/
 
 #if defined(_SPOO_HAS_SYSCTL)
-
 #include <sys/types.h>
 #include <sys/sysctl.h>
-
 #endif /*_SPOO_HAS_SYSCTL*/
 
 #include <sys/time.h>
