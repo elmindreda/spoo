@@ -177,7 +177,6 @@ void _spooPlatformDestroyThread(SPOOthread ID)
 int _spooPlatformWaitThread(SPOOthread ID, int waitmode)
 {
     DWORD result;
-    HANDLE hThread;
     _SPOOthread* thread;
 
     ENTER_THREAD_CRITICAL_SECTION
@@ -191,16 +190,13 @@ int _spooPlatformWaitThread(SPOOthread ID, int waitmode)
         return SPOO_TRUE;
     }
 
-    // Get thread handle
-    hThread = thread->windows.handle;
-
     LEAVE_THREAD_CRITICAL_SECTION
 
     // Wait for thread to die
     if (waitmode == SPOO_WAIT)
-        result = WaitForSingleObject(hThread, INFINITE);
+        result = WaitForSingleObject(thread->windows.handle, INFINITE);
     else if (waitmode == SPOO_NOWAIT)
-        result = WaitForSingleObject(hThread, 0);
+        result = WaitForSingleObject(thread->windows.handle, 0);
     else
         return SPOO_FALSE;
 
