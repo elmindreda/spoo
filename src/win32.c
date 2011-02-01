@@ -93,6 +93,132 @@ static DWORD WINAPI runThread(LPVOID lpParam)
 //////////////////////////////////////////////////////////////////////////
 
 //========================================================================
+// Initialize library
+//========================================================================
+
+int _spooPlatformInit(void)
+{
+    __int64 freq;
+
+    if (QueryPerformanceFrequency((LARGE_INTEGER*) &freq))
+    {
+        _spooLibrary.windows.hasPerformanceCounter = SPOO_TRUE;
+        _spooLibrary.windows.timerRes = 1.0 / (double) freq;
+        QueryPerformanceCounter((LARGE_INTEGER*) &_spooLibrary.windows.baseTime64);
+    }
+    else
+    {
+        _spooLibrary.windows.hasPerformanceCounter = SPOO_FALSE;
+
+        // timeGetTime resolution always 1ms
+        _spooLibrary.windows.timerRes = 1.0 / 1000.0;
+        _spooLibrary.windows.baseTime32 = timeGetTime();
+    }
+
+    InitializeCriticalSection(&_spooLibrary.windows.criticalSection);
+
+    // The first thread (the main thread) has ID 0
+    _spooLibrary.nextID = 0;
+
+    // Fill out information about the main thread (this thread)
+    _spooLibrary.first.ID       = _spooLibrary.nextID++;
+    _spooLibrary.first.function = NULL;
+    _spooLibrary.first.prev     = NULL;
+    _spooLibrary.first.next     = NULL;
+    _spooLibrary.first.windows.handle = GetCurrentThread();
+    _spooLibrary.first.windows.ID = GetCurrentThreadId();
+}
+
+
+//========================================================================
+// Kill all threads and terminate library
+//========================================================================
+
+int _spooPlatformTerminate(void)
+{
+    _GLFWthread* thread;
+
+    // Only the main thread is allowed to do this
+    if (GetCurrentThreadId() != _spooLibrary.first.windows.ID)
+        return SPOO_FALSE;
+
+    ENTER_THREAD_CRITICAL_SECTION
+
+    // Kill all remaining threads created by Spoo
+    // NOTE: The user should wait for all threads to die BEFORE calling
+    // spooTerminate.  Any work we need to do here is really an error.
+    while (thread = _spooLibrary.first.next)
+        _spooPlatformDestroyThread(thread->ID);
+
+    LEAVE_THREAD_CRITICAL_SECTION
+
+    DeleteCriticalSection(&_spooLibrary.windows.criticalSection);
+}
+
+
+//========================================================================
+// Return timer value in seconds
+//========================================================================
+
+double _spooPlatformGetTime(void)
+{
+    double rawTime;
+    __int64 counter;
+
+    if (_spooLibrary.windows.hasPerformanceCounter)
+    {
+        QueryPerformanceCounter((LARGE_INTEGER*) &counter);
+        rawTime = (double) (counter - _spooLibrary.windows.baseTime64);
+    }
+    else
+        rawTime = (double) (timeGetTime() - _spooLibrary.windows.baseTime32);
+
+    // Convert time value into seconds
+    return rawTime * _spooLibrary.windows.timerRes;
+}
+
+
+//========================================================================
+// Set timer value in seconds
+//========================================================================
+
+void _spooPlatformSetTime(double time)
+{
+    __int64 counter;
+    double rawTime = time / _spooLibrary.windows.timerRes;
+
+    if (_spooLibrary.windows.hasPerformanceCounter)
+    {
+        QueryPerformanceCounter((LARGE_INTEGER*) &counter);
+        _spooLibrary.windows.baseTime64 = counter - (__int64) rawTime;
+    }
+    else
+        _spooLibrary.windows.baseTime32 = timeGetTime() - (int) rawTime;
+}
+
+
+//========================================================================
+// Put the current thread to sleep for the specified amount of time
+//========================================================================
+
+void _spooPlatformSleep(double time)
+{
+    DWORD t;
+
+    if (time == 0.0)
+        t = 0;
+    else if (time < 0.001)
+        t = 1;
+    else if (time > 2147483647.0)
+        t = 2147483647;
+    else
+        t = (DWORD) (time * 1000.0 + 0.5);
+
+    Sleep(t);
+}
+
+
+//========================================================================
 // Create a new thread
 //========================================================================
 
