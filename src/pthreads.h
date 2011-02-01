@@ -34,21 +34,6 @@
 
 
 //========================================================================
-// Spoo platform-specific macros
-//========================================================================
-
-//------------------------------------------------------------------------
-// Macros for encapsulating critical code sections (i.e. making parts
-// of Spoo thread safe)
-//------------------------------------------------------------------------
-
-#define ENTER_THREAD_CRITICAL_SECTION \
-        pthread_mutex_lock(&_spooLibrary.posix.criticalSection);
-#define LEAVE_THREAD_CRITICAL_SECTION \
-        pthread_mutex_unlock(&_spooLibrary.posix.criticalSection);
-
-
-//========================================================================
 // Spoo platform-specific types
 //========================================================================
 

@@ -33,6 +33,14 @@
 #include <stdlib.h>
 
 
+// Macros for encapsulating critical code sections (i.e. making parts
+// of Spoo thread safe)
+#define ENTER_THREAD_CRITICAL_SECTION \
+        EnterCriticalSection(&_spooLibrary.windows.criticalSection);
+#define LEAVE_THREAD_CRITICAL_SECTION \
+        LeaveCriticalSection(&_spooLibrary.windows.criticalSection);
+
+
 //************************************************************************
 // This is an implementation of POSIX "compatible" condition variables for
 // Win32, as described by Douglas C. Schmidt and Irfan Pyarali:
