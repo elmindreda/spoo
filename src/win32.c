@@ -56,7 +56,6 @@ typedef struct
 } _SPOOcond;
 
 
-
 //////////////////////////////////////////////////////////////////////////
 //////                   Spoo internal functions                    //////
 //////////////////////////////////////////////////////////////////////////
@@ -193,7 +192,7 @@ int _spooPlatformWaitThread(SPOOthread ID, int waitmode)
     }
 
     // Get thread handle
-    hThread = thread->handle;
+    hThread = thread->windows.handle;
 
     LEAVE_THREAD_CRITICAL_SECTION
 
