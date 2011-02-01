@@ -75,4 +75,5 @@ configure_file(${spoo_SOURCE_DIR}/src/config.h.in
 
 add_subdirectory(src)
 add_subdirectory(examples)
+add_subdirectory(tests)
 
