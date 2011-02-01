@@ -33,7 +33,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
 void hello_function(void* arg)
 {
     // Print the first part of the message
