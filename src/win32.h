@@ -44,7 +44,7 @@
 
 //------------------------------------------------------------------------
 // Macros for encapsulating critical code sections (i.e. making parts
-// of GLFW thread safe)
+// of Spoo thread safe)
 //------------------------------------------------------------------------
 
 #define ENTER_THREAD_CRITICAL_SECTION \
