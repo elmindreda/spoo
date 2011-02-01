@@ -46,6 +46,7 @@ if (CMAKE_USE_WIN32_THREADS_INIT)
   set(_SPOO_WIN32 1)
 
   list(APPEND spoo_SOURCES ${spoo_SOURCE_DIR}/src/win32.c)
+  list(APPEND spoo_LIBRARIES winmm)
 
 elseif (CMAKE_USE_PTHREADS_INIT)
 

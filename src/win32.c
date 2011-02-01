@@ -29,6 +29,7 @@
 
 #include "internal.h"
 
+#include <mmsystem.h>
 #include <stdlib.h>
 
 
@@ -127,6 +128,8 @@ int _spooPlatformInit(void)
     _spooLibrary.first.next     = NULL;
     _spooLibrary.first.windows.handle = GetCurrentThread();
     _spooLibrary.first.windows.ID = GetCurrentThreadId();
+
+    return SPOO_TRUE;
 }
 
 
@@ -136,7 +139,7 @@ int _spooPlatformInit(void)
 
 int _spooPlatformTerminate(void)
 {
-    _GLFWthread* thread;
+    _SPOOthread* thread;
 
     // Only the main thread is allowed to do this
     if (GetCurrentThreadId() != _spooLibrary.first.windows.ID)
@@ -153,6 +156,8 @@ int _spooPlatformTerminate(void)
     LEAVE_THREAD_CRITICAL_SECTION
 
     DeleteCriticalSection(&_spooLibrary.windows.criticalSection);
+
+    return SPOO_TRUE;
 }
 
 
