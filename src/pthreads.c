@@ -121,6 +121,19 @@ static void makeWaitTime(struct timespec* result, double duration)
     result->tv_sec = tv.tv_sec + dt_sec;
 }
 
+//========================================================================
+// Returns the current raw time
+//========================================================================
+
+long long getCurrentRawTime(void)
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+
+    return (long long) tv.tv_sec * (long long) 1000000 +
+           (long long) tv.tv_usec;
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 //////                   Spoo platform functions                    //////
@@ -132,15 +145,11 @@ static void makeWaitTime(struct timespec* result, double duration)
 
 int _spooPlatformInit(void)
 {
-    struct timeval tv;
-
     // "Resolution" is 1 us
     _spooLibrary.posix.timerRes = 1e-6;
 
     // Set start time for timer
-    gettimeofday(&tv, NULL);
-    _spooLibrary.posix.baseTime = (long long) tv.tv_sec * (long long) 1000000 +
-                                  (long long) tv.tv_usec;
+    _spooLibrary.posix.baseTime = getCurrentRawTime();
 
     pthread_mutex_init(&_spooLibrary.posix.criticalSection, NULL);
 
@@ -193,14 +202,9 @@ int _spooPlatformTerminate(void)
 
 double _spooPlatformGetTime(void)
 {
-    long long time;
-    struct timeval tv;
+    long long time = getCurrentRawTime() - _spooLibrary.posix.baseTime;
 
-    gettimeofday(&tv, NULL);
-    time = (long long) tv.tv_sec * (long long) 1000000 +
-           (long long) tv.tv_usec;
-
-    return (double) (time - _spooLibrary.posix.baseTime) * _spooLibrary.posix.timerRes;
+    return (double) time * _spooLibrary.posix.timerRes;
 }
 
 
@@ -210,15 +214,9 @@ double _spooPlatformGetTime(void)
 
 void _spooPlatformSetTime(double time)
 {
-    int64_t baseTime;
-    struct timeval tv;
+    long long offset = (long long) (time / _spooLibrary.posix.timerRes);
 
-    gettimeofday(&tv, NULL);
-    baseTime = (long long) tv.tv_sec * (long long) 1000000 +
-               (long long) tv.tv_usec;
-
-    // Calulate new starting time
-    _spooLibrary.posix.baseTime = baseTime - (long long) (time / _spooLibrary.posix.timerRes);
+    _spooLibrary.posix.baseTime = getCurrentRawTime() - offset;
 }
 
 
