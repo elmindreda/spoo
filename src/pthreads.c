@@ -288,7 +288,7 @@ SPOOthread _spooPlatformCreateThread(SPOOthreadfun fun, void* arg)
     if (pthread_create(&thread->posix.ID, // POSIX thread handle
                        NULL,              // Default thread attributes
                        runThread,         // Internal thread function
-                       (void*) arg) != 0) // Argument to thread user function
+                       arg) != 0)         // Argument to thread user function
     {
         free(thread);
         LEAVE_THREAD_CRITICAL_SECTION
