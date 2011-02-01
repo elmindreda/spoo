@@ -41,6 +41,8 @@
 // the system: sysconf (POSIX) and sysctl (BSD?)
 #if defined(_SPOO_HAS_SYSCONF)
 
+ #include <unistd.h>
+
  // Use a single constant for querying number of online processors using
  // the sysconf function (e.g. SGI defines _SC_NPROC_ONLN instead of
  // _SC_NPROCESSORS_ONLN)

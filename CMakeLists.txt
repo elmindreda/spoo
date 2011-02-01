@@ -35,6 +35,8 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
 endif(COMMAND cmake_policy)
 
+include(CheckFunctionExists)
+
 set(CMAKE_THREAD_PREFER_PTHREADS 1)
 find_package(Threads REQUIRED)
 
@@ -58,6 +60,10 @@ elseif (CMAKE_USE_PTHREADS_INIT)
   if (CMAKE_HAVE_THREADS_LIBRARY)
     list(APPEND spoo_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
   endif (CMAKE_HAVE_THREADS_LIBRARY)
+
+  check_function_exists(sched_yield _SPOO_HAS_SCHED_YIELD)
+  check_function_exists(sysctl _SPOO_HAS_SYSCTL)
+  check_function_exists(sysconf _SPOO_HAS_SYSCONF)
 
 endif (CMAKE_USE_WIN32_THREADS_INIT)
 
