@@ -92,6 +92,8 @@ int _spooPlatformInit(void);
 int _spooPlatformTerminate(void);
 
 // Time
+double _spooPlatformGetTime(void);
+void _spooPlatformSetTime(double time);
 void _spooPlatformSleep(double time);
 
 // Threads
