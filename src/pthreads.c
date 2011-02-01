@@ -29,8 +29,11 @@
 
 #include "internal.h"
 
-#include <sys/time.h>
+#if defined(_SPOO_HAS_SYSCTL)
 #include <sys/sysctl.h>
+#endif
+
+#include <sys/time.h>
 #include <signal.h>
 #include <stdlib.h>
 
