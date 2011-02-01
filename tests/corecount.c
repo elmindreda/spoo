@@ -35,13 +35,15 @@
 
 int main(void)
 {
+    int count;
+
     if (!spooInit())
     {
         fprintf(stderr, "Failed to initialize Spoo\n");
         exit(EXIT_FAILURE);
     }
 
-    int count = spooGetCPUCoreCount();
+    count = spooGetCPUCoreCount();
 
     printf("%i CPU core%s reported\n", count, count == 1 ? "" : "s");
 
