@@ -36,8 +36,6 @@
 #define VC_EXTRALEAN
 
 #include <windows.h>
-#include <mmsystem.h>
-#include "../../include/GL/glfw.h"
 
 
 //========================================================================
