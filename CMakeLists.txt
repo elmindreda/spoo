@@ -38,7 +38,8 @@ endif(COMMAND cmake_policy)
 set(CMAKE_THREAD_PREFER_PTHREADS 1)
 find_package(Threads REQUIRED)
 
-set(spoo_SOURCES ${spoo_SOURCE_DIR}/src/common.c)
+set(spoo_SOURCES ${spoo_SOURCE_DIR}/include/spoo/spoo.h
+                 ${spoo_SOURCE_DIR}/src/common.c)
 
 if (CMAKE_USE_WIN32_THREADS_INIT)
 
