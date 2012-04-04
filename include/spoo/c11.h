@@ -27,8 +27,8 @@
  *
  *************************************************************************/
 
-#ifndef __spoo_c11_h__
-#define __spoo_c11_h__
+#ifndef spoo_c11_h
+#define spoo_c11_h
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,5 +78,5 @@ struct xtime
 }
 #endif
 
-#endif /* __spoo_h__ */
+#endif /* spoo_h */
 
