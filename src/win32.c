@@ -300,7 +300,7 @@ void _spooPlatformDestroyThread(SPOOthread ID)
         return;
     }
 
-    // Simply murder the process
+    // Simply murder the thread
     if (TerminateThread(thread->windows.handle, 0))
     {
         CloseHandle(thread->windows.handle);
