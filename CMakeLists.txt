@@ -31,9 +31,9 @@ project(spoo C)
 
 cmake_minimum_required(VERSION 2.6)
 
-if(COMMAND cmake_policy)
+if (COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
-endif(COMMAND cmake_policy)
+endif()
 
 set(CMAKE_THREAD_PREFER_PTHREADS 1)
 find_package(Threads REQUIRED)
@@ -66,10 +66,12 @@ elseif (CMAKE_USE_PTHREADS_INIT)
   check_function_exists(sysctl _SPOO_HAS_SYSCTL)
   check_function_exists(sysconf _SPOO_HAS_SYSCONF)
 
-endif (CMAKE_USE_WIN32_THREADS_INIT)
+endif()
 
-set(SPOO_LIBRARIES ${spoo_LIBRARIES} CACHE STRING "Depdendencies of the Spoo library")
-set(SPOO_INCLUDE_DIR ${spoo_SOURCE_DIR}/include CACHE STRING "Public include directory of the Spoo library")
+set(SPOO_LIBRARIES ${spoo_LIBRARIES} CACHE STRING
+    "Depdendencies of the Spoo library")
+set(SPOO_INCLUDE_DIR ${spoo_SOURCE_DIR}/include CACHE STRING
+    "Public include directory of the Spoo library")
 
 configure_file(${spoo_SOURCE_DIR}/src/config.h.in 
                ${spoo_BINARY_DIR}/src/config.h @ONLY)
