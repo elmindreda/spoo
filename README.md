@@ -1,5 +1,4 @@
-The Spoo threading library
-==========================
+# The Spoo threading library
 
 Spoo is a simple threading library based on the deprecated threading API from
 GLFW 2.x.  It was created as a service to people whose projects depend on this
@@ -11,9 +10,9 @@ facilities.  That said, Spoo is still a useful library.
 
 Spoo has been verified to work on:
 
-  GCC and Cygwin pthreads
-  VS 2008 and Win32 threads
-  MinGW and Win32 threads
-  GCC and Snow Leopard pthreads
-  GCC and Linux pthreads
+- GCC and Cygwin pthreads
+- VS 2008 and Win32 threads
+- MinGW and Win32 threads
+- GCC and Snow Leopard pthreads
+- GCC and Linux pthreads
 
