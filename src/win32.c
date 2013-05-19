@@ -35,10 +35,11 @@
 
 // Macros for encapsulating critical code sections (i.e. making parts
 // of Spoo thread safe)
+//
 #define ENTER_THREAD_CRITICAL_SECTION \
-        EnterCriticalSection(&_spooLibrary.windows.criticalSection);
+        EnterCriticalSection(&_spoo.windows.criticalSection)
 #define LEAVE_THREAD_CRITICAL_SECTION \
-        LeaveCriticalSection(&_spooLibrary.windows.criticalSection);
+        LeaveCriticalSection(&_spoo.windows.criticalSection)
 
 
 //************************************************************************
@@ -71,10 +72,8 @@ typedef struct
 //////                   Spoo internal functions                    //////
 //////////////////////////////////////////////////////////////////////////
 
-//========================================================================
 // Set up the Spoo thread, run the user function and clean up
-//========================================================================
-
+//
 static DWORD WINAPI runThread(LPVOID lpParam)
 {
     _SPOOthread* thread;
@@ -88,9 +87,9 @@ static DWORD WINAPI runThread(LPVOID lpParam)
     thread->function(lpParam);
 
     // Remove thread from thread list
-    ENTER_THREAD_CRITICAL_SECTION
+    ENTER_THREAD_CRITICAL_SECTION;
     _spooRemoveThread(thread);
-    LEAVE_THREAD_CRITICAL_SECTION
+    LEAVE_THREAD_CRITICAL_SECTION;
 
     // When this function returns, the thread dies
     return 0;
@@ -101,119 +100,105 @@ static DWORD WINAPI runThread(LPVOID lpParam)
 //////                   Spoo platform functions                    //////
 //////////////////////////////////////////////////////////////////////////
 
-//========================================================================
 // Initialize library
-//========================================================================
-
+//
 int _spooPlatformInit(void)
 {
     __int64 freq;
 
     if (QueryPerformanceFrequency((LARGE_INTEGER*) &freq))
     {
-        _spooLibrary.windows.hasPerformanceCounter = SPOO_TRUE;
-        _spooLibrary.windows.timerRes = 1.0 / (double) freq;
-        QueryPerformanceCounter((LARGE_INTEGER*) &_spooLibrary.windows.baseTime64);
+        _spoo.windows.hasPerformanceCounter = SPOO_TRUE;
+        _spoo.windows.timerRes = 1.0 / (double) freq;
+        QueryPerformanceCounter((LARGE_INTEGER*) &_spoo.windows.baseTime64);
     }
     else
     {
-        _spooLibrary.windows.hasPerformanceCounter = SPOO_FALSE;
+        _spoo.windows.hasPerformanceCounter = SPOO_FALSE;
 
         // timeGetTime resolution always 1ms
-        _spooLibrary.windows.timerRes = 1.0 / 1000.0;
-        _spooLibrary.windows.baseTime32 = timeGetTime();
+        _spoo.windows.timerRes = 1.0 / 1000.0;
+        _spoo.windows.baseTime32 = timeGetTime();
     }
 
-    InitializeCriticalSection(&_spooLibrary.windows.criticalSection);
+    InitializeCriticalSection(&_spoo.windows.criticalSection);
 
     // The first thread (the main thread) has ID 0
-    _spooLibrary.nextID = 0;
+    _spoo.nextID = 0;
 
     // Fill out information about the main thread (this thread)
-    _spooLibrary.first.ID       = _spooLibrary.nextID++;
-    _spooLibrary.first.function = NULL;
-    _spooLibrary.first.prev     = NULL;
-    _spooLibrary.first.next     = NULL;
-    _spooLibrary.first.windows.handle = GetCurrentThread();
-    _spooLibrary.first.windows.ID = GetCurrentThreadId();
+    _spoo.first.ID       = _spoo.nextID++;
+    _spoo.first.function = NULL;
+    _spoo.first.prev     = NULL;
+    _spoo.first.next     = NULL;
+    _spoo.first.windows.handle = GetCurrentThread();
+    _spoo.first.windows.ID = GetCurrentThreadId();
 
     return SPOO_TRUE;
 }
 
-
-//========================================================================
 // Kill all threads and terminate library
-//========================================================================
-
+//
 int _spooPlatformTerminate(void)
 {
     _SPOOthread* thread;
 
     // Only the main thread is allowed to do this
-    if (GetCurrentThreadId() != _spooLibrary.first.windows.ID)
+    if (GetCurrentThreadId() != _spoo.first.windows.ID)
         return SPOO_FALSE;
 
-    ENTER_THREAD_CRITICAL_SECTION
+    ENTER_THREAD_CRITICAL_SECTION;
 
     // Kill all remaining threads created by Spoo
     // NOTE: The user should wait for all threads to die BEFORE calling
     // spooTerminate.  Any work we need to do here is really an error.
-    while (thread = _spooLibrary.first.next)
+    while (thread = _spoo.first.next)
         _spooPlatformDestroyThread(thread->ID);
 
-    LEAVE_THREAD_CRITICAL_SECTION
+    LEAVE_THREAD_CRITICAL_SECTION;
 
-    DeleteCriticalSection(&_spooLibrary.windows.criticalSection);
+    DeleteCriticalSection(&_spoo.windows.criticalSection);
 
     return SPOO_TRUE;
 }
 
-
-//========================================================================
 // Return timer value in seconds
-//========================================================================
-
+//
 double _spooPlatformGetTime(void)
 {
     double rawTime;
     __int64 counter;
 
-    if (_spooLibrary.windows.hasPerformanceCounter)
+    if (_spoo.windows.hasPerformanceCounter)
     {
         QueryPerformanceCounter((LARGE_INTEGER*) &counter);
-        rawTime = (double) (counter - _spooLibrary.windows.baseTime64);
+        rawTime = (double) (counter - _spoo.windows.baseTime64);
     }
     else
-        rawTime = (double) (timeGetTime() - _spooLibrary.windows.baseTime32);
+        rawTime = (double) (timeGetTime() - _spoo.windows.baseTime32);
 
     // Convert time value into seconds
-    return rawTime * _spooLibrary.windows.timerRes;
+    return rawTime * _spoo.windows.timerRes;
 }
 
-
-//========================================================================
 // Set timer value in seconds
-//========================================================================
-
+//
 void _spooPlatformSetTime(double time)
 {
     __int64 counter;
-    double rawTime = time / _spooLibrary.windows.timerRes;
+    double rawTime = time / _spoo.windows.timerRes;
 
-    if (_spooLibrary.windows.hasPerformanceCounter)
+    if (_spoo.windows.hasPerformanceCounter)
     {
         QueryPerformanceCounter((LARGE_INTEGER*) &counter);
-        _spooLibrary.windows.baseTime64 = counter - (__int64) rawTime;
+        _spoo.windows.baseTime64 = counter - (__int64) rawTime;
     }
     else
-        _spooLibrary.windows.baseTime32 = timeGetTime() - (int) rawTime;
+        _spoo.windows.baseTime32 = timeGetTime() - (int) rawTime;
 }
 
-
-//========================================================================
 // Put the current thread to sleep for the specified amount of time
-//========================================================================
-
+//
 void _spooPlatformSleep(double time)
 {
     DWORD t;
@@ -230,28 +215,25 @@ void _spooPlatformSleep(double time)
     Sleep(t);
 }
 
-
-//========================================================================
 // Create a new thread
-//========================================================================
-
+//
 SPOOthread _spooPlatformCreateThread(SPOOthreadfun fun, void* arg)
 {
     _SPOOthread* thread;
     HANDLE hThread;
     DWORD dwThreadId;
 
-    ENTER_THREAD_CRITICAL_SECTION
+    ENTER_THREAD_CRITICAL_SECTION;
 
     thread = (_SPOOthread*) malloc(sizeof(_SPOOthread));
     if (!thread)
     {
-        LEAVE_THREAD_CRITICAL_SECTION
+        LEAVE_THREAD_CRITICAL_SECTION;
         return SPOO_INVALID_THREAD;
     }
 
     // Store thread information
-    thread->ID = _spooLibrary.nextID++;
+    thread->ID = _spoo.nextID++;
     thread->function = fun;
 
     hThread = CreateThread(NULL,         // Default security attributes
@@ -265,7 +247,7 @@ SPOOthread _spooPlatformCreateThread(SPOOthreadfun fun, void* arg)
     if (!hThread)
     {
         free(thread);
-        LEAVE_THREAD_CRITICAL_SECTION
+        LEAVE_THREAD_CRITICAL_SECTION;
         return SPOO_INVALID_THREAD;
     }
 
@@ -275,28 +257,25 @@ SPOOthread _spooPlatformCreateThread(SPOOthreadfun fun, void* arg)
 
     _spooAppendThread(thread);
 
-    LEAVE_THREAD_CRITICAL_SECTION
+    LEAVE_THREAD_CRITICAL_SECTION;
 
     return thread->ID;
 }
 
-
-//========================================================================
 // Kill a running thread
 // NOTE: This is a VERY DANGEROUS operation that should NOT BE USED except
 // in EXTREME SITUATIONS!
-//========================================================================
-
+//
 void _spooPlatformDestroyThread(SPOOthread ID)
 {
     _SPOOthread* thread;
 
-    ENTER_THREAD_CRITICAL_SECTION
+    ENTER_THREAD_CRITICAL_SECTION;
 
     thread = _spooGetThreadPointer(ID);
     if (!thread)
     {
-        LEAVE_THREAD_CRITICAL_SECTION
+        LEAVE_THREAD_CRITICAL_SECTION;
         return;
     }
 
@@ -307,31 +286,28 @@ void _spooPlatformDestroyThread(SPOOthread ID)
         _spooRemoveThread(thread);
     }
 
-    LEAVE_THREAD_CRITICAL_SECTION
+    LEAVE_THREAD_CRITICAL_SECTION;
 }
 
-
-//========================================================================
 // Wait for a thread to die
-//========================================================================
-
+//
 int _spooPlatformWaitThread(SPOOthread ID, int waitmode)
 {
     DWORD result;
     _SPOOthread* thread;
 
-    ENTER_THREAD_CRITICAL_SECTION
+    ENTER_THREAD_CRITICAL_SECTION;
 
     thread = _spooGetThreadPointer(ID);
 
     // Is the thread already dead?
     if (!thread)
     {
-        LEAVE_THREAD_CRITICAL_SECTION
+        LEAVE_THREAD_CRITICAL_SECTION;
         return SPOO_TRUE;
     }
 
-    LEAVE_THREAD_CRITICAL_SECTION
+    LEAVE_THREAD_CRITICAL_SECTION;
 
     // Wait for thread to die
     if (waitmode == SPOO_WAIT)
@@ -348,11 +324,8 @@ int _spooPlatformWaitThread(SPOOthread ID, int waitmode)
     return SPOO_TRUE;
 }
 
-
-//========================================================================
 // Return the thread ID for the current thread
-//========================================================================
-
+//
 SPOOthread _spooPlatformGetThreadID(void)
 {
     _SPOOthread* thread;
@@ -363,9 +336,9 @@ SPOOthread _spooPlatformGetThreadID(void)
     windowsID = GetCurrentThreadId();
 
     // Seralize access to thread list
-    ENTER_THREAD_CRITICAL_SECTION
+    ENTER_THREAD_CRITICAL_SECTION;
 
-    for (thread = &_spooLibrary.first;  thread;  thread = thread->next)
+    for (thread = &_spoo.first;  thread;  thread = thread->next)
     {
         if (thread->windows.ID == windowsID)
         {
@@ -374,16 +347,13 @@ SPOOthread _spooPlatformGetThreadID(void)
         }
     }
 
-    LEAVE_THREAD_CRITICAL_SECTION
+    LEAVE_THREAD_CRITICAL_SECTION;
 
     return threadID;
 }
 
-
-//========================================================================
 // Create a mutual exclusion object
-//========================================================================
-
+//
 SPOOmutex _spooPlatformCreateMutex(void)
 {
     CRITICAL_SECTION* mutex;
@@ -397,44 +367,32 @@ SPOOmutex _spooPlatformCreateMutex(void)
     return (SPOOmutex) mutex;
 }
 
-
-//========================================================================
 // Destroy a mutual exclusion object
-//========================================================================
-
+//
 void _spooPlatformDestroyMutex(SPOOmutex mutex)
 {
     DeleteCriticalSection((CRITICAL_SECTION*) mutex);
     free(mutex);
 }
 
-
-//========================================================================
 // Request access to a mutex
-//========================================================================
-
+//
 void _spooPlatformLockMutex(SPOOmutex mutex)
 {
     // Wait for mutex to be released
     EnterCriticalSection((CRITICAL_SECTION*) mutex);
 }
 
-
-//========================================================================
 // Release a mutex
-//========================================================================
-
+//
 void _spooPlatformUnlockMutex(SPOOmutex mutex)
 {
     // Release mutex
     LeaveCriticalSection((CRITICAL_SECTION*) mutex);
 }
 
-
-//========================================================================
 // Create a new condition variable object
-//========================================================================
-
+//
 SPOOcond _spooPlatformCreateCond(void)
 {
     _SPOOcond* cond;
@@ -452,11 +410,8 @@ SPOOcond _spooPlatformCreateCond(void)
     return (SPOOcond) cond;
 }
 
-
-//========================================================================
 // Destroy a condition variable object
-//========================================================================
-
+//
 void _spooPlatformDestroyCond(SPOOcond handle)
 {
     _SPOOcond* cond = (_SPOOcond*) handle;
@@ -472,11 +427,8 @@ void _spooPlatformDestroyCond(SPOOcond handle)
     free(cond);
 }
 
-
-//========================================================================
 // Wait for a condition to be raised
-//========================================================================
-
+//
 void _spooPlatformWaitCond(SPOOcond handle, SPOOmutex mutex, double timeout)
 {
     _SPOOcond* cond = (_SPOOcond*) handle;
@@ -525,11 +477,8 @@ void _spooPlatformWaitCond(SPOOcond handle, SPOOmutex mutex, double timeout)
     EnterCriticalSection((CRITICAL_SECTION*) mutex);
 }
 
-
-//========================================================================
 // Signal a condition to one waiting thread
-//========================================================================
-
+//
 void _spooPlatformSignalCond(SPOOcond handle)
 {
     int haveWaiters;
@@ -544,11 +493,8 @@ void _spooPlatformSignalCond(SPOOcond handle)
         SetEvent(cond->events[_SPOO_COND_SIGNAL]);
 }
 
-
-//========================================================================
 // Broadcast a condition to all waiting threads
-//========================================================================
-
+//
 void _spooPlatformBroadcastCond(SPOOcond handle)
 {
     int haveWaiters;
@@ -563,11 +509,8 @@ void _spooPlatformBroadcastCond(SPOOcond handle)
         SetEvent(cond->events[_SPOO_COND_BROADCAST]);
 }
 
-
-//========================================================================
 // Return the number of processors in the system
-//========================================================================
-
+//
 int _spooPlatformGetCPUCoreCount(void)
 {
     SYSTEM_INFO si;

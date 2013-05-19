@@ -33,34 +33,27 @@
 #include <string.h>
 
 
-//========================================================================
 // The library initialization state
-//========================================================================
-
+//
 static int initialized = SPOO_FALSE;
 
-
-//========================================================================
 // Library global state
-//========================================================================
-
-_SPOOlibrary _spooLibrary;
+//
+_SPOOlibrary _spoo;
 
 
 //////////////////////////////////////////////////////////////////////////
 //////                   Spoo internal functions                    //////
 //////////////////////////////////////////////////////////////////////////
 
-//========================================================================
 // Find pointer to thread with a matching ID
 // NOTE: This function is not thread safe and calls to it must be serialized
-//========================================================================
-
+//
 _SPOOthread* _spooGetThreadPointer(int threadID)
 {
     _SPOOthread* thread;
 
-    for (thread = &_spooLibrary.first;  thread;  thread = thread->next)
+    for (thread = &_spoo.first;  thread;  thread = thread->next)
     {
         if (thread->ID == threadID)
             break;
@@ -69,17 +62,14 @@ _SPOOthread* _spooGetThreadPointer(int threadID)
     return thread;
 }
 
-
-//========================================================================
 // Append thread to thread list
 // NOTE: This function is not thread safe and calls to it must be serialized
-//========================================================================
-
+//
 void _spooAppendThread(_SPOOthread* thread)
 {
     _SPOOthread* last;
 
-    last = &_spooLibrary.first;
+    last = &_spoo.first;
     while (last->next)
         last = last->next;
 
@@ -88,12 +78,9 @@ void _spooAppendThread(_SPOOthread* thread)
     thread->next = NULL;
 }
 
-
-//========================================================================
 // Remove thread from thread list
 // NOTE: This function is not thread safe and calls to it must be serialized
-//========================================================================
-
+//
 void _spooRemoveThread(_SPOOthread* thread)
 {
     if (thread->prev)
@@ -106,21 +93,18 @@ void _spooRemoveThread(_SPOOthread* thread)
 }
 
 
-
 //////////////////////////////////////////////////////////////////////////
 //////                      Spoo user functions                     //////
 //////////////////////////////////////////////////////////////////////////
 
-//========================================================================
 // Initialize the library
-//========================================================================
-
+//
 int spooInit(void)
 {
     if (initialized)
         return SPOO_TRUE;
 
-    memset(&_spooLibrary, 0, sizeof(_SPOOlibrary));
+    memset(&_spoo, 0, sizeof(_spoo));
 
     if (!_spooPlatformInit())
         return SPOO_FALSE;
@@ -131,11 +115,8 @@ int spooInit(void)
     return SPOO_TRUE;
 }
 
-
-//========================================================================
 // Kill all threads and terminate library
-//========================================================================
-
+//
 void spooTerminate(void)
 {
     if (!initialized)
@@ -147,11 +128,8 @@ void spooTerminate(void)
     initialized = SPOO_FALSE;
 }
 
-
-//========================================================================
 // Return timer value in seconds
-//========================================================================
-
+//
 double spooGetTime(void)
 {
     if (!initialized)
@@ -160,11 +138,8 @@ double spooGetTime(void)
     return _spooPlatformGetTime();
 }
 
-
-//========================================================================
 // Set timer value in seconds
-//========================================================================
-
+//
 void spooSetTime(double time)
 {
     if (!initialized)
@@ -173,11 +148,8 @@ void spooSetTime(double time)
     _spooPlatformSetTime(time);
 }
 
-
-//========================================================================
 // Create a new thread
-//========================================================================
-
+//
 SPOOthread spooCreateThread(SPOOthreadfun fun, void* arg)
 {
     if (!initialized)
@@ -186,11 +158,8 @@ SPOOthread spooCreateThread(SPOOthreadfun fun, void* arg)
     return _spooPlatformCreateThread(fun, arg);
 }
 
-
-//========================================================================
 // Put the current thread to sleep for the specified amount of time
-//========================================================================
-
+//
 void spooSleep(double time)
 {
     if (!initialized)
@@ -199,13 +168,10 @@ void spooSleep(double time)
     _spooPlatformSleep(time);
 }
 
-
-//========================================================================
 // Kill the specified thread
 // NOTE: This is a VERY DANGEROUS operation that should NOT BE USED except
 // in EXTREME SITUATIONS!
-//========================================================================
-
+//
 void spooDestroyThread(SPOOthread threadID)
 {
     if (!initialized)
@@ -218,11 +184,8 @@ void spooDestroyThread(SPOOthread threadID)
     _spooPlatformDestroyThread(threadID);
 }
 
-
-//========================================================================
 // Wait for a thread to die
-//========================================================================
-
+//
 int spooWaitThread(SPOOthread threadID, int waitmode)
 {
     if (!initialized)
@@ -235,11 +198,8 @@ int spooWaitThread(SPOOthread threadID, int waitmode)
     return _spooPlatformWaitThread(threadID, waitmode);
 }
 
-
-//========================================================================
 // Return the thread ID for the current thread
-//========================================================================
-
+//
 SPOOthread spooGetThreadID(void)
 {
     if (!initialized)
@@ -248,11 +208,8 @@ SPOOthread spooGetThreadID(void)
     return _spooPlatformGetThreadID();
 }
 
-
-//========================================================================
 // Create a mutual exclusion object
-//========================================================================
-
+//
 SPOOmutex spooCreateMutex(void)
 {
     if (!initialized)
@@ -261,11 +218,8 @@ SPOOmutex spooCreateMutex(void)
     return _spooPlatformCreateMutex();
 }
 
-
-//========================================================================
 // Destroy a mutual exclusion object
-//========================================================================
-
+//
 void spooDestroyMutex(SPOOmutex mutex)
 {
     if (!initialized || !mutex)
@@ -274,11 +228,8 @@ void spooDestroyMutex(SPOOmutex mutex)
     _spooPlatformDestroyMutex(mutex);
 }
 
-
-//========================================================================
 // Request access to a mutex
-//========================================================================
-
+//
 void spooLockMutex(SPOOmutex mutex)
 {
     if (!initialized && !mutex)
@@ -287,11 +238,8 @@ void spooLockMutex(SPOOmutex mutex)
     _spooPlatformLockMutex(mutex);
 }
 
-
-//========================================================================
 // Release a mutex
-//========================================================================
-
+//
 void spooUnlockMutex(SPOOmutex mutex)
 {
     if (!initialized && !mutex)
@@ -300,11 +248,8 @@ void spooUnlockMutex(SPOOmutex mutex)
     _spooPlatformUnlockMutex(mutex);
 }
 
-
-//========================================================================
 // Create a new condition variable object
-//========================================================================
-
+//
 SPOOcond spooCreateCond(void)
 {
     if (!initialized)
@@ -313,11 +258,8 @@ SPOOcond spooCreateCond(void)
     return _spooPlatformCreateCond();
 }
 
-
-//========================================================================
 // Destroy a condition variable object
-//========================================================================
-
+//
 void spooDestroyCond(SPOOcond cond)
 {
     if (!initialized || !cond)
@@ -326,11 +268,8 @@ void spooDestroyCond(SPOOcond cond)
     _spooPlatformDestroyCond(cond);
 }
 
-
-//========================================================================
 // Wait for a condition to be raised
-//========================================================================
-
+//
 void spooWaitCond(SPOOcond cond, SPOOmutex mutex, double timeout)
 {
     if (!initialized || !cond || !mutex)
@@ -339,11 +278,8 @@ void spooWaitCond(SPOOcond cond, SPOOmutex mutex, double timeout)
     _spooPlatformWaitCond(cond, mutex, timeout);
 }
 
-
-//========================================================================
 // Signal a condition to one waiting thread
-//========================================================================
-
+//
 void spooSignalCond(SPOOcond cond)
 {
     if (!initialized || !cond)
@@ -352,11 +288,8 @@ void spooSignalCond(SPOOcond cond)
     _spooPlatformSignalCond(cond);
 }
 
-
-//========================================================================
 // Broadcast a condition to all waiting threads
-//========================================================================
-
+//
 void spooBroadcastCond(SPOOcond cond)
 {
     if (!initialized || !cond)
@@ -365,13 +298,10 @@ void spooBroadcastCond(SPOOcond cond)
     _spooPlatformBroadcastCond(cond);
 }
 
-
-//========================================================================
 // Return the number of CPU cores in the system
 // This information can be useful for determining the optimal number of
 // threads to use for performing certain tasks
-//========================================================================
-
+//
 int spooGetCPUCoreCount(void)
 {
     if (!initialized)

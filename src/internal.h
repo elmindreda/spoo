@@ -80,7 +80,7 @@ typedef struct _SPOOlibrary
 // Library global state
 //========================================================================
 
-extern _SPOOlibrary _spooLibrary;
+extern _SPOOlibrary _spoo;
 
 
 //========================================================================

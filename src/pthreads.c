@@ -40,6 +40,7 @@
 // Use a single constant for querying number of online processors using
 // the sysconf function (e.g. SGI defines _SC_NPROC_ONLN instead of
 // _SC_NPROCESSORS_ONLN)
+//
 #ifndef _SC_NPROCESSORS_ONLN
  #ifdef  _SC_NPROC_ONLN
   #define _SC_NPROCESSORS_ONLN _SC_NPROC_ONLN
@@ -61,20 +62,19 @@
 
 // Macros for encapsulating critical code sections (i.e. making parts
 // of Spoo thread safe)
+//
 #define ENTER_THREAD_CRITICAL_SECTION \
-        pthread_mutex_lock(&_spooLibrary.posix.criticalSection);
+        pthread_mutex_lock(&_spoo.posix.criticalSection)
 #define LEAVE_THREAD_CRITICAL_SECTION \
-        pthread_mutex_unlock(&_spooLibrary.posix.criticalSection);
+        pthread_mutex_unlock(&_spoo.posix.criticalSection)
 
 
 //////////////////////////////////////////////////////////////////////////
 //////                   Spoo internal functions                    //////
 //////////////////////////////////////////////////////////////////////////
 
-//========================================================================
 // Set up the Spoo thread, run the user function and clean up
-//========================================================================
-
+//
 static void* runThread(void* arg)
 {
     SPOOthreadfun threadfun;
@@ -89,19 +89,16 @@ static void* runThread(void* arg)
     thread->function(arg);
 
     // Remove thread from thread list
-    ENTER_THREAD_CRITICAL_SECTION
+    ENTER_THREAD_CRITICAL_SECTION;
     _spooRemoveThread(thread);
-    LEAVE_THREAD_CRITICAL_SECTION
+    LEAVE_THREAD_CRITICAL_SECTION;
 
     // When this function returns, the thread dies
     return NULL;
 }
 
-
-//========================================================================
 // Set up a timespec struct to a time duration seconds after now
-//========================================================================
-
+//
 static void makeWaitTime(struct timespec* result, double duration)
 {
     struct timeval tv;
@@ -121,10 +118,8 @@ static void makeWaitTime(struct timespec* result, double duration)
     result->tv_sec = tv.tv_sec + dt_sec;
 }
 
-//========================================================================
 // Returns the current raw time
-//========================================================================
-
+//
 long long getCurrentRawTime(void)
 {
     struct timeval tv;
@@ -139,91 +134,77 @@ long long getCurrentRawTime(void)
 //////                   Spoo platform functions                    //////
 //////////////////////////////////////////////////////////////////////////
 
-//========================================================================
 // Initialize library
-//========================================================================
-
+//
 int _spooPlatformInit(void)
 {
     // "Resolution" is 1 us
-    _spooLibrary.posix.timerRes = 1e-6;
+    _spoo.posix.timerRes = 1e-6;
 
     // Set start time for timer
-    _spooLibrary.posix.baseTime = getCurrentRawTime();
+    _spoo.posix.baseTime = getCurrentRawTime();
 
-    pthread_mutex_init(&_spooLibrary.posix.criticalSection, NULL);
+    pthread_mutex_init(&_spoo.posix.criticalSection, NULL);
 
     // The first thread (the main thread) has ID 0
-    _spooLibrary.nextID = 0;
+    _spoo.nextID = 0;
 
     // Fill out information about the main thread (this thread)
-    _spooLibrary.first.ID       = _spooLibrary.nextID++;
-    _spooLibrary.first.function = NULL;
-    _spooLibrary.first.prev     = NULL;
-    _spooLibrary.first.next     = NULL;
-    _spooLibrary.first.posix.ID = pthread_self();
+    _spoo.first.ID       = _spoo.nextID++;
+    _spoo.first.function = NULL;
+    _spoo.first.prev     = NULL;
+    _spoo.first.next     = NULL;
+    _spoo.first.posix.ID = pthread_self();
 
     return SPOO_TRUE;
 }
 
-
-//========================================================================
 // Kill all threads and terminate library
-//========================================================================
-
+//
 int _spooPlatformTerminate(void)
 {
     _SPOOthread* thread;
 
     // Only the main thread is allowed to do this
-    if (pthread_self() != _spooLibrary.first.posix.ID)
+    if (pthread_self() != _spoo.first.posix.ID)
         return SPOO_FALSE;
 
-    ENTER_THREAD_CRITICAL_SECTION
+    ENTER_THREAD_CRITICAL_SECTION;
 
     // Kill all remaining threads created by Spoo
     // NOTE: The user should wait for all threads to die BEFORE calling
     // spooTerminate.  Any work we need to do here is really an error.
-    while (thread = _spooLibrary.first.next)
+    while (thread = _spoo.first.next)
         _spooPlatformDestroyThread(thread->ID);
 
-    LEAVE_THREAD_CRITICAL_SECTION
+    LEAVE_THREAD_CRITICAL_SECTION;
 
     // Delete critical section handle
-    pthread_mutex_destroy(&_spooLibrary.posix.criticalSection);
+    pthread_mutex_destroy(&_spoo.posix.criticalSection);
 
     return SPOO_TRUE;
 }
 
-
-//========================================================================
 // Return timer value in seconds
-//========================================================================
-
+//
 double _spooPlatformGetTime(void)
 {
-    long long time = getCurrentRawTime() - _spooLibrary.posix.baseTime;
+    long long time = getCurrentRawTime() - _spoo.posix.baseTime;
 
-    return (double) time * _spooLibrary.posix.timerRes;
+    return (double) time * _spoo.posix.timerRes;
 }
 
-
-//========================================================================
 // Set timer value in seconds
-//========================================================================
-
+//
 void _spooPlatformSetTime(double time)
 {
-    long long offset = (long long) (time / _spooLibrary.posix.timerRes);
+    long long offset = (long long) (time / _spoo.posix.timerRes);
 
-    _spooLibrary.posix.baseTime = getCurrentRawTime() - offset;
+    _spoo.posix.baseTime = getCurrentRawTime() - offset;
 }
 
-
-//========================================================================
 // Put the current thread to sleep for the specified amount of time
-//========================================================================
-
+//
 void _spooPlatformSleep(double time)
 {
     struct timespec wait;
@@ -261,27 +242,24 @@ void _spooPlatformSleep(double time)
     pthread_cond_destroy(&cond);
 }
 
-
-//========================================================================
 // Create a new thread
-//========================================================================
-
+//
 SPOOthread _spooPlatformCreateThread(SPOOthreadfun fun, void* arg)
 {
     _SPOOthread* thread;
 
-    ENTER_THREAD_CRITICAL_SECTION
+    ENTER_THREAD_CRITICAL_SECTION;
 
     // Create a new thread information memory area
     thread = (_SPOOthread*) malloc(sizeof(_SPOOthread));
     if (!thread)
     {
-        LEAVE_THREAD_CRITICAL_SECTION
+        LEAVE_THREAD_CRITICAL_SECTION;
         return SPOO_INVALID_THREAD;
     }
 
     // Store thread information
-    thread->ID = _spooLibrary.nextID++;
+    thread->ID = _spoo.nextID++;
     thread->function = fun;
 
     // Did the thread creation fail?
@@ -291,34 +269,31 @@ SPOOthread _spooPlatformCreateThread(SPOOthreadfun fun, void* arg)
                        arg) != 0)         // Argument to thread user function
     {
         free(thread);
-        LEAVE_THREAD_CRITICAL_SECTION
+        LEAVE_THREAD_CRITICAL_SECTION;
         return SPOO_INVALID_THREAD;
     }
 
     _spooAppendThread(thread);
 
-    LEAVE_THREAD_CRITICAL_SECTION
+    LEAVE_THREAD_CRITICAL_SECTION;
 
     return thread->ID;
 }
 
-
-//========================================================================
 // Kill a running thread
 // NOTE: This is a VERY DANGEROUS operation that should NOT BE USED except
 // in EXTREME SITUATIONS!
-//========================================================================
-
+//
 void _spooPlatformDestroyThread(SPOOthread ID)
 {
     _SPOOthread* thread;
 
-    ENTER_THREAD_CRITICAL_SECTION
+    ENTER_THREAD_CRITICAL_SECTION;
 
     thread = _spooGetThreadPointer(ID);
     if (!thread)
     {
-        LEAVE_THREAD_CRITICAL_SECTION
+        LEAVE_THREAD_CRITICAL_SECTION;
         return;
     }
 
@@ -328,37 +303,34 @@ void _spooPlatformDestroyThread(SPOOthread ID)
     // Remove thread from thread list
     _spooRemoveThread(thread);
 
-    LEAVE_THREAD_CRITICAL_SECTION
+    LEAVE_THREAD_CRITICAL_SECTION;
 }
 
-
-//========================================================================
 // Wait for a thread to die
-//========================================================================
-
+//
 int _spooPlatformWaitThread(SPOOthread ID, int waitmode)
 {
     _SPOOthread* thread;
 
-    ENTER_THREAD_CRITICAL_SECTION
+    ENTER_THREAD_CRITICAL_SECTION;
 
     thread = _spooGetThreadPointer(ID);
 
     // Is the thread already dead?
     if (!thread)
     {
-        LEAVE_THREAD_CRITICAL_SECTION
+        LEAVE_THREAD_CRITICAL_SECTION;
         return SPOO_TRUE;
     }
 
     // If got this far, the thread is alive => polling returns FALSE
     if (waitmode == SPOO_NOWAIT)
     {
-        LEAVE_THREAD_CRITICAL_SECTION
+        LEAVE_THREAD_CRITICAL_SECTION;
         return SPOO_FALSE;
     }
 
-    LEAVE_THREAD_CRITICAL_SECTION
+    LEAVE_THREAD_CRITICAL_SECTION;
 
     // Wait for thread to die
     pthread_join(thread->posix.ID, NULL);
@@ -366,11 +338,8 @@ int _spooPlatformWaitThread(SPOOthread ID, int waitmode)
     return SPOO_TRUE;
 }
 
-
-//========================================================================
 // Return the thread ID for the current thread
-//========================================================================
-
+//
 SPOOthread _spooPlatformGetThreadID(void)
 {
     _SPOOthread* thread;
@@ -380,11 +349,11 @@ SPOOthread _spooPlatformGetThreadID(void)
     // Get current POSIX thread ID
     posixID = pthread_self();
 
-    ENTER_THREAD_CRITICAL_SECTION
+    ENTER_THREAD_CRITICAL_SECTION;
 
     // Loop through entire list of threads to find the matching POSIX
     // thread ID
-    for (thread = &_spooLibrary.first;  thread;  thread = thread->next)
+    for (thread = &_spoo.first;  thread;  thread = thread->next)
     {
         if (thread->posix.ID == posixID)
         {
@@ -393,16 +362,13 @@ SPOOthread _spooPlatformGetThreadID(void)
         }
     }
 
-    LEAVE_THREAD_CRITICAL_SECTION
+    LEAVE_THREAD_CRITICAL_SECTION;
 
     return threadID;
 }
 
-
-//========================================================================
 // Create a mutual exclusion object
-//========================================================================
-
+//
 SPOOmutex _spooPlatformCreateMutex(void)
 {
     pthread_mutex_t* mutex;
@@ -416,11 +382,8 @@ SPOOmutex _spooPlatformCreateMutex(void)
     return (SPOOmutex) mutex;
 }
 
-
-//========================================================================
 // Destroy a mutual exclusion object
-//========================================================================
-
+//
 void _spooPlatformDestroyMutex(SPOOmutex mutex)
 {
     pthread_mutex_destroy((pthread_mutex_t*) mutex);
@@ -428,31 +391,22 @@ void _spooPlatformDestroyMutex(SPOOmutex mutex)
     free(mutex);
 }
 
-
-//========================================================================
 // Request access to a mutex
-//========================================================================
-
+//
 void _spooPlatformLockMutex(SPOOmutex mutex)
 {
     pthread_mutex_lock((pthread_mutex_t*) mutex);
 }
 
-
-//========================================================================
 // Release a mutex
-//========================================================================
-
+//
 void _spooPlatformUnlockMutex(SPOOmutex mutex)
 {
     pthread_mutex_unlock((pthread_mutex_t*) mutex);
 }
 
-
-//========================================================================
 // Create a new condition variable object
-//========================================================================
-
+//
 SPOOcond _spooPlatformCreateCond(void)
 {
     pthread_cond_t* cond;
@@ -466,11 +420,8 @@ SPOOcond _spooPlatformCreateCond(void)
     return (SPOOcond) cond;
 }
 
-
-//========================================================================
 // Destroy a condition variable object
-//========================================================================
-
+//
 void _spooPlatformDestroyCond(SPOOcond cond)
 {
     pthread_cond_destroy((pthread_cond_t*) cond);
@@ -478,11 +429,8 @@ void _spooPlatformDestroyCond(SPOOcond cond)
     free(cond);
 }
 
-
-//========================================================================
 // Wait for a condition to be raised
-//========================================================================
-
+//
 void _spooPlatformWaitCond(SPOOcond cond, SPOOmutex mutex, double timeout)
 {
     struct timespec wait;
@@ -505,31 +453,22 @@ void _spooPlatformWaitCond(SPOOcond cond, SPOOmutex mutex, double timeout)
     }
 }
 
-
-//========================================================================
 // Signal a condition to one waiting thread
-//========================================================================
-
+//
 void _spooPlatformSignalCond(SPOOcond cond)
 {
     pthread_cond_signal((pthread_cond_t*) cond);
 }
 
-
-//========================================================================
 // Broadcast a condition to all waiting threads
-//========================================================================
-
+//
 void _spooPlatformBroadcastCond(SPOOcond cond)
 {
     pthread_cond_broadcast((pthread_cond_t*) cond);
 }
 
-
-//========================================================================
 // Return the number of processors in the system
-//========================================================================
-
+//
 int _spooPlatformGetCPUCoreCount(void)
 {
     int count;
